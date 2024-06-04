@@ -1,0 +1,222 @@
+---
+title: "Credit_Card_Fraud_Detection"
+author: "Aditya Pradip Kulkarni"
+date: "2023-05-04"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+---
+
+# Load all the required libraries
+
+```{r}
+library(dplyr)    # Data manipulation
+library(stringr)  # Data manipulation
+library(caTools)  # train/test split
+library(ggplot2)  # Data visualization
+library(corrplot) # Correlations
+library(Rborist)  # Random forest model
+library(xgboost)  # Xgboost model
+library(shiny)    # Creating Shiny app
+library(caret)    # Getting metrics, measuring model performance
+```
+
+# Exploring the data.
+
+```{r}
+# Load the dataset
+df = read.csv('creditcard.csv')
+
+# Exploring the first 5 rows in the data
+head(df,n = 5)
+
+# Checking structure of features
+str(df)
+
+# Getting the descriptive statistics for each variable
+summary(df)
+```
+
+## Data pre-processing and checking for imbalance in class.
+
+## Part - 1
+
+```{r}
+print("checking missing values if any")
+colSums(is.na(df))
+
+print("checking for class imbalance")
+table(df$Class)
+
+print("checking class imbalance in percentage")
+prop.table(table(df$Class))
+```
+
+## Data Visualization - EDA
+
+```{r}
+# Distribution of class labels
+common_theme <- theme(plot.title = element_text(hjust = 0.5, face = "bold"))
+
+ggplot(data = df, aes(x = factor(Class), 
+                      y = prop.table(stat(count)), fill = factor(Class),
+                      label = scales::percent(prop.table(stat(count))))) +
+  geom_bar(position = "dodge") + 
+  geom_text(stat = 'count',
+            position = position_dodge(.9), 
+            vjust = -0.5, 
+            size = 3) + 
+  scale_x_discrete(labels = c("no fraud", "fraud"))+
+  scale_y_continuous(labels = scales::percent)+
+  labs(x = 'Class', y = 'Percentage') +
+  ggtitle("Distribution of class labels") +
+  common_theme
+
+# Distribution of time of transaction by class
+df %>%
+  ggplot(aes(x = Time, fill = factor(Class))) + geom_histogram(bins = 100)+
+  labs(x = 'Time in seconds since first transaction', y = 'No. of transactions') +
+  ggtitle('Distribution of time of transaction by class') +
+  facet_grid(Class ~ ., scales = 'free_y') + common_theme
+
+# Distribution of transaction amount by class
+ggplot(df, aes(x = factor(Class), y = Amount)) + geom_boxplot() + 
+  labs(x = 'Class', y = 'Amount') +
+  ggtitle("Distribution of transaction amount by class") + common_theme
+
+# Feature correlation
+correlations <- cor(df[,-1],method="pearson")
+corrplot(correlations, number.cex = .9, method = "circle", type = "full", tl.cex=0.8,tl.col = "black")
+```
+
+## Data pre-processing and checking for imbalance in class.
+
+### Part - 2
+
+```{r}
+#Remove 'Time' variable
+df <- df[,-1]
+
+#Change 'Class' variable to factor
+df$Class <- as.factor(df$Class)
+levels(df$Class) <- c("Not_Fraud", "Fraud")
+
+#Scale numeric variables
+df[,-30] <- scale(df[,-30])
+```
+
+## **MODEL BUILDING :**
+
+### Splitting the dataset
+
+```{r}
+set.seed(123)
+split <- sample.split(df$Class, SplitRatio = 0.7)
+train <-  subset(df, split == TRUE)
+test <- subset(df, split == FALSE)
+
+# upsampling
+set.seed(9560)
+up_train <- upSample(x = train[, -ncol(train)],
+                         y = train$Class)
+table(up_train$Class)
+```
+
+### **Logistic Regression**
+
+```{r}
+glm_fit <- glm(Class ~ ., data = up_train, family = 'binomial')
+
+pred_glm <- predict(glm_fit, newdata = test, type = 'response')
+
+roc.curve(test$Class, pred_glm, plotit = TRUE)
+
+```
+
+### Random forest
+
+```{r}
+x = up_train[, -30]
+y = up_train[,30]
+
+rf_fit <- Rborist(x, y, ntree = 1000, minNode = 20, maxLeaf = 13)
+
+
+rf_pred <- predict(rf_fit, test[,-30], ctgCensus = "prob")
+prob <- rf_pred$prob
+
+roc.curve(test$Class, prob[,2], plotit = TRUE)
+```
+
+### XGBoost
+
+```{r}
+# Converting the class labels from factor to numeric type
+
+labels <- up_train$Class
+
+y <- recode(labels, 'Not_Fraud' = 0, "Fraud" = 1)
+
+set.seed(42)
+xgb <- xgboost(data = data.matrix(up_train[,-30]), 
+               label = y,
+               eta = 0.1,
+               gamma = 0.1,
+               max_depth = 10, 
+               nrounds = 300, 
+               objective = "binary:logistic",
+               colsample_bytree = 0.6,
+               verbose = 0,
+               nthread = 7,
+)
+
+xgb_pred <- predict(xgb, data.matrix(test[,-30]))
+
+roc.curve(test$Class, xgb_pred, plotit = TRUE)
+```
+
+## Compute feature importance
+
+```{r}
+importance_matrix <- xgb.importance(names, model = xgb)
+
+# Convert to data frame
+importance_df <- data.frame(
+  feature = rownames(importance_matrix),
+  importance_score = importance_matrix$Gain
+)
+
+# Sort by importance score
+importance_df <- importance_df[order(-importance_df$importance_score),]
+
+# Add percentage column
+total_importance <- sum(importance_df$importance_score)
+importance_df$percentage <- importance_df$importance_score / total_importance * 100
+
+# Plot feature importance
+ggplot(importance_df[1:10,], aes(x = feature, y = percentage, fill = feature)) +
+  geom_col() +
+  scale_fill_viridis_d(option = "plasma", direction = -1) +
+  coord_flip() +
+  labs(x = "Feature", y = "Importance (%)", title = "XGBoost Feature Importance") +
+  theme_minimal() +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    axis.title.y = element_text(size = 14, margin = margin(t = 0, r = 10, b = 0, l = 0)),
+    axis.title.x = element_text(size = 14, margin = margin(t = 10, r = 0, b = 0, l = 0)),
+    plot.title = element_text(size = 16, hjust = 0.5)
+  )
+
+
+```
+
+## Results
+
+| Model               | AUC-ROC |
+|---------------------|---------|
+| Logistic regression | 97.1%   |
+| Random Forest       | 97.7%   |
+| XGBoost             | 97.1%   |
