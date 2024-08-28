@@ -58,8 +58,9 @@ This project underscores the importance of proper sampling, modeling, and evalua
 ## **Getting Started**
 
 ### **Prerequisites**
-- Python 3.7+
-- Libraries: pandas, numpy, scikit-learn, xgboost, matplotlib, seaborn
+- R
+- R Studio
+- Libraries: dplyr, stringr, caTools, ggplot2, corrplot, Rborist, xgboost, shiny, caret
 
 ### **Installation**
 Clone the repository and install the required packages:
@@ -72,10 +73,8 @@ pip install -r requirements.txt
 
 ### **Usage**
 To run the analysis and train models:
+1. Open the rmd file with R studio and run.
 
-```bash
-python fraud_detection.py
-```
 
 ## **Future Work**
 - **Parameter Tuning**: Further tuning of the Random Forest model could yield even better results.
