@@ -63,12 +63,11 @@ This project underscores the importance of proper sampling, modeling, and evalua
 - Libraries: dplyr, stringr, caTools, ggplot2, corrplot, Rborist, xgboost, shiny, caret
 
 ### **Installation**
-Clone the repository and install the required packages:
+Clone the repository:
 
 ```bash
 git clone https://github.com/kulkarniaditya1002/Credit-Card-Fraud-Analysis-Prediction.git
 cd Credit-Card-Fraud-Analysis-Prediction
-pip install -r requirements.txt
 ```
 
 ### **Usage**
