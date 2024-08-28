@@ -13,8 +13,6 @@ This project focuses on detecting fraudulent credit card transactions using vari
   - `1` for fraud
   - `0` for non-fraud
 
-> **Note:** Due to confidentiality, the original features are unavailable. The provided features have been transformed using PCA.
-
 ### **Metadata & Pre-processing**
 - **Principal Components**: Features `V1` to `V28` are PCA-derived.
 - **`Time`**: Seconds elapsed between each transaction and the first transaction in the dataset.
@@ -78,9 +76,6 @@ To run the analysis and train models:
 ```bash
 python fraud_detection.py
 ```
-
-### **Results**
-The model performance metrics and visualizations will be saved in the `results/` directory.
 
 ## **Future Work**
 - **Parameter Tuning**: Further tuning of the Random Forest model could yield even better results.
