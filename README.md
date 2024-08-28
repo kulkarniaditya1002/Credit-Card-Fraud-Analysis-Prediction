@@ -67,8 +67,8 @@ This project underscores the importance of proper sampling, modeling, and evalua
 Clone the repository and install the required packages:
 
 ```bash
-git clone https://github.com/yourusername/credit-card-fraud-detection.git
-cd credit-card-fraud-detection
+git clone https://github.com/kulkarniaditya1002/Credit-Card-Fraud-Analysis-Prediction.git
+cd Credit-Card-Fraud-Analysis-Prediction
 pip install -r requirements.txt
 ```
 
@@ -90,7 +90,5 @@ The model performance metrics and visualizations will be saved in the `results/`
 ## **Contributing**
 Contributions are welcome! Please open an issue or submit a pull request for any improvements or features you'd like to see.
 
-## **License**
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
